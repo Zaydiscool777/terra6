@@ -1,0 +1,109 @@
+{-# LANGUAGE BlockArguments #-}
+module Lib
+    ( step
+    ) where
+
+-- https://en.wikipedia.org/wiki/CHIP-8
+-- import qualified Data.Vector as V
+import Data.Vector (Vector, (!), (//))
+-- import Data.Word (Word8, Word16)
+import Control.Lens
+import Data.Bits (xor, (.&.), (.|.))
+
+import Data_
+
+timestep m = m & td %~ succ & ts %~ succ
+pcstep m = m & pc %~ (+ 4)
+
+comb3 :: (Integral a2, Integral a3, Integral a4, Num a5) => a2 -> a3 -> a4 -> a5
+comb3 a b c = comb2 a (comb2 b c)
+comb2 :: (Integral a1, Integral a2, Num a3) => a1 -> a2 -> a3
+comb2 b c = fromInteger ((toInteger b * 256) + toInteger c)
+
+(!-) :: Enum a1 => Vector a2 -> a1 -> a2
+a !- b = a ! fromEnum b
+
+step :: Model -> Model
+step m = let
+    pc_ = m ^. pc
+    ram_ = m ^. ram
+    rv_ = m ^. rv
+    fetch o = ram_ !- (pc_ + o)
+  in case (fetch 0, fetch 1, fetch 2, fetch 3) of
+    (0x0, 0x0, 0xE, 0x0) -> m & clrscr & timestep & pcstep
+      where clrscr = _
+    (0x0, 0x0, 0xE, 0xE) -> m & ret & timestep & pcstep
+      where ret = _
+    (0x1, a, b, c) -> m & pc .~ comb3 a b c & timestep
+    (0x2, a, b, c) -> m & push (comb3 a b c)
+      where push = _
+    (0x3, x, b, c) ->
+      if rv_ ! fromEnum x == comb2 b c
+        then m & pc %~ (+ 8) & timestep
+        else m & pcstep & timestep
+    (0x4, x, b, c) ->
+      if rv_ ! fromEnum x /= comb2 b c
+        then m & pc %~ (+ 8) & timestep
+        else m & pcstep & timestep
+    (0x5, x, y, 0x0) ->
+      if rv_ ! fromEnum x == rv_ ! fromEnum y
+        then m & pc %~ (+ 8) & timestep
+        else m & pcstep & timestep
+    (0x6, x, b, c) ->
+      m & rv %~ (\r -> r // [(fromEnum x, comb2 b c)]) & timestep & pcstep
+    (0x7, x, b, c) ->
+      m & rv %~ (\r -> let i = fromEnum x
+                       in r // [(i, r ! i + comb2 b c)]) & timestep & pcstep
+    (0x8, x, y, 0x0) ->
+      m & rv %~ (\r -> r // [(fromEnum x, r ! fromEnum y)]) & timestep & pcstep
+    (0x8, x, y, 0x1) ->
+      m & rv %~ (\r -> r // [(fromEnum x, r ! fromEnum x .|. r ! fromEnum y)]) & timestep & pcstep
+    (0x8, x, y, 0x2) ->
+      m & rv %~ (\r -> r // [(fromEnum x, r ! fromEnum x .&. r ! fromEnum y)]) & timestep & pcstep
+    (0x8, x, y, 0x3) ->
+      m & rv %~ (\r -> r // [(fromEnum x, r ! fromEnum x `xor` r ! fromEnum y)]) & timestep & pcstep
+    (0x8, x, y, 0x4) -> m & addxy x y & timestep & pcstep
+      where addxy = _
+    (0x8, x, y, 0x5) -> m & subxy x y & timestep & pcstep
+      where subxy = _
+    (0x8, x, y, 0x6) -> m & shrxy x y & timestep & pcstep
+      where shrxy = _
+    (0x8, x, y, 0x7) -> m & subyx x y & timestep & pcstep
+      where subyx = _
+    (0x8, x, y, 0xE) -> m & shlxy x y & timestep & pcstep
+      where shlxy = _
+    (0x9, x, y, 0x0) ->
+      if rv_ ! fromEnum x /= rv_ ! fromEnum y
+        then m & pc %~ (+ 8) & timestep
+        else m & pcstep & timestep
+    (0xA, a, b, c) -> m & ri .~ comb3 a b c & timestep & pcstep
+    (0xB, a, b, c) -> m & pc .~ comb3 a b c + fromIntegral (rv_ ! 0) & timestep
+    (0xC, x, b, c) -> m & random x (comb2 b c) & timestep & pcstep
+      where random = _
+    (0xD, x, y, c) -> m & draw x y c & timestep & pcstep
+      where draw = _
+    (0xE, x, 0x9, 0xE) -> m & keypressed x & timestep
+      where keypressed = _
+    (0xE, x, 0xA, 0x1) -> m & keynotpressed x & timestep
+      where keynotpressed = _
+    (0xF, x, b', c') -> case comb2 b' c' of
+      0x07 ->
+        m & rv %~ (\r -> r // [(fromEnum x, fromIntegral (m ^. td))]) & timestep & pcstep
+      0x0A -> m & waitkey x & timestep
+        where waitkey = _
+      0x15 -> m & td .~ fromIntegral (rv_ ! fromEnum x) & timestep & pcstep
+      0x18 -> m & ts .~ fromIntegral (rv_ ! fromEnum x) & timestep & pcstep
+      0x1E ->
+        m & ri %~ (+ fromIntegral (rv_ ! fromEnum x)) & timestep & pcstep
+      0x29 ->
+        m & ri .~ fromIntegral (rv_ ! fromEnum x * 5) & timestep & pcstep
+      0x33 ->
+        let i = fromEnum (m ^. ri)
+            value = rv_ ! fromEnum x
+        in m & ram %~ (\r -> r // [(i, value `div` 100), (i + 1, (value `mod` 100) `div` 10), (i + 2, value `mod` 10)]) & timestep & pcstep
+      0x55 ->
+        m & ram %~ (\r -> r // [(fromEnum (m ^. ri) + i, rv_ ! i) | i <- [0 .. fromEnum x]]) & timestep & pcstep
+      0x65 ->
+        m & rv %~ (\r -> r // [(i, ram_ ! (fromEnum (m ^. ri) + i)) | i <- [0 .. fromEnum x]]) & timestep & pcstep
+      _ -> m
+    _ -> m

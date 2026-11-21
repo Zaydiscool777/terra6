@@ -25,7 +25,9 @@ source-repository head
 
 library
   exposed-modules:
+      Data_
       Lib
+      Lower
   other-modules:
       Paths_terra6
   autogen-modules:
@@ -35,6 +37,10 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , h-raylib
+    , lens
+    , random
+    , vector
   default-language: Haskell2010
 
 executable terra6-exe
@@ -48,7 +54,11 @@ executable terra6-exe
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , h-raylib
+    , lens
+    , random
     , terra6
+    , vector
   default-language: Haskell2010
 
 test-suite terra6-test
@@ -63,5 +73,9 @@ test-suite terra6-test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , h-raylib
+    , lens
+    , random
     , terra6
+    , vector
   default-language: Haskell2010
