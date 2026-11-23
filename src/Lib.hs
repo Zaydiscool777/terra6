@@ -1,36 +1,18 @@
 module Lib
     ( step
     ) where
-
 -- https://en.wikipedia.org/wiki/CHIP-8
+
+import Data_
+
 -- import qualified Data.Vector as V
-import Data.Vector (Vector, (!), (//))
+import Data.Vector ((//))
 import Data.Word (Word8)
 import Data.Bits
 import Control.Lens
 import Data.Function (on)
 import System.Random
 import Lower
-
-import Data_
-
-comb3 :: (Integral a2, Integral a3, Integral a4, Num a5) => a2 -> a3 -> a4 -> a5
-comb3 a b = comb2 a . comb2 b
-comb2 :: (Integral a1, Integral a2, Num a3) => a1 -> a2 -> a3
-comb2 b c = fromInteger (toInteger b * 256 + toInteger c)
-
-infix 7 !-
-(!-) :: Enum a1 => Vector a2 -> a1 -> a2
-a !- b = a ! fromEnum b
-
-infix 5 //-
-(//-) :: Enum a1 => a1 -> a2 -> Vector a2 -> Vector a2
-b //- c = (// [(fromEnum b, c)])
-
-bgstep :: Model -> IO Model
-bgstep m = do
-  return $ m & pc %~ (+ 2)
--- WRONG: & td %~ pred & ts %~ pred 
 
 step :: Model -> IO Model
 step m =
@@ -41,18 +23,16 @@ step m =
     ri_ = fE (m ^. ri)
     rvg :: Enum a => a -> Word8
     rvg = (rv_ !-)
-    fE :: Enum a => a -> Int
-    fE = fromEnum
     rf = rv . ix 0xF
   in case
     ((ram_ !- pc_ `shiftR` 4) .&. 0xF,
     (ram_ !- pc_) .&. 0xF,
     (ram_ !- succ pc_ `shiftR` 4) .&. 0xF,
     (ram_ !- succ pc_) .&. 0xF) of
-      (0x0, 0x0, 0xE, 0x0) -> clrscr m >>= bgstep 
-      (0x0, 0x0, 0xE, 0xE) -> ret m
+      (0x0, 0x0, 0xE, 0x0) -> clrscr m & bgstep 
+      (0x0, 0x0, 0xE, 0xE) -> ret m & bgstep
       (0x1, a, b, c) -> m & pc .~ comb3 a b c & bgstep
-      (0x2, a, b, c) -> call m (comb3 a b c)
+      (0x2, a, b, c) -> call m (comb3 a b c) & bgstep
       (0x3, x, b, c) ->
         m & pc %~
         (+ if rvg x == comb2 b c
@@ -115,7 +95,7 @@ step m =
       (0xC, x, b, c) ->
         let (a, s) = random (m ^. seed) in
         m & seed .~ s & rv %~ x //- (a .&. comb2 b c) & bgstep
-      (0xD, x, y, c) -> draw m >>= bgstep
+      (0xD, x, y, c) -> sprite m x y c & bgstep
       (0xE, x, 0x9, 0xE) -> pressed m x >>= bgstep
       (0xE, x, 0xA, 0x1) -> unpressed m x >>= bgstep
       (0xF, x, b', c') -> case comb2 b' c' of

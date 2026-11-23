@@ -21,10 +21,15 @@ description:         Please see the README on GitHub at <https://github.com/zayd
 
 dependencies:
 - base >= 4.7 && < 5
+- bytestring
 - vector
 - h-raylib
 - lens
 - random
+- indexed-traversable
+- linear
+- bytestring
+- directory
 
 ghc-options:
 - -Wall
@@ -60,4 +65,5 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - directory
     - terra6

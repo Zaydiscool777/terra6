@@ -37,8 +37,12 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , bytestring
+    , directory
     , h-raylib
+    , indexed-traversable
     , lens
+    , linear
     , random
     , vector
   default-language: Haskell2010
@@ -54,8 +58,12 @@ executable terra6-exe
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , bytestring
+    , directory
     , h-raylib
+    , indexed-traversable
     , lens
+    , linear
     , random
     , terra6
     , vector
@@ -73,8 +81,12 @@ test-suite terra6-test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , bytestring
+    , directory
     , h-raylib
+    , indexed-traversable
     , lens
+    , linear
     , random
     , terra6
     , vector
