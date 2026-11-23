@@ -35,11 +35,10 @@ fI = fromIntegral
 
 bgstep :: Model -> IO Model
 bgstep m = do
-  print (_ram m)
+  -- print (_ram m)
   beginDrawing
   iforM_ (m ^. scr) \ri' ->
     imapM_ \ci x -> do
-      when x $ print x
       let k = pixelsz
       drawRectangle (ci * k) (ri' * k) k k if x then white else black
   endDrawing

@@ -16,8 +16,7 @@ forever' x i = do
 main :: IO ()
 main = do
   _ <- initWindow (64 * pixelsz) (32 * pixelsz) "emulator"
-  setTargetFPS 60
+  setTargetFPS 6 -- 60
   setExitKey KeyEscape
   m <- loadRom "file.ch8"
-  print (_ram m)
   forever' step m

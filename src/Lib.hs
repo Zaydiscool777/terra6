@@ -24,11 +24,13 @@ step m =
     rvg :: Enum a => a -> Word8
     rvg = (rv_ !-)
     rf = rv . ix 0xF
+    byte0 = ram_ !- pc_
+    byte1 = ram_ !- succ pc_
   in case
-    ((ram_ !- pc_ `shiftR` 4) .&. 0xF,
-    (ram_ !- pc_) .&. 0xF,
-    (ram_ !- succ pc_ `shiftR` 4) .&. 0xF,
-    (ram_ !- succ pc_) .&. 0xF) of
+    ((byte0 `shiftR` 4) .&. 0xF,
+    byte0 .&. 0xF,
+    (byte1 `shiftR` 4) .&. 0xF,
+    byte1 .&. 0xF) of
       (0x0, 0x0, 0xE, 0x0) -> clrscr m & bgstep 
       (0x0, 0x0, 0xE, 0xE) -> ret m & bgstep
       (0x1, a, b, c) -> m & pc .~ comb3 a b c & bgstep
@@ -111,5 +113,11 @@ step m =
           (ri_ + 2, rvg x `mod` 10)]) & bgstep
         0x55 -> m & ram %~ (// [(ri_ + fE i, rvg i) | i <- [0..x]]) & bgstep
         0x65 -> m & rv %~ (// [(fE i, ram_ !- ri_ + i) | i <- [0..x]]) & bgstep
-        _ -> m & bgstep
-      _ -> m & bgstep
+        _ -> do
+          putStr "F:"
+          print (x, b', c')
+          m & bgstep
+      x -> do
+        print pc_
+        print x
+        m & bgstep

@@ -62,7 +62,7 @@ data Model = Model {
   _sp :: Word16,
   _seed :: StdGen,
   _scr :: Vector (Vector Bool)
-}
+} deriving Show
 makeLenses ''Model
 
 init' :: Model
